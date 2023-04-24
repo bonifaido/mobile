@@ -28,14 +28,14 @@ var refs struct {
 	sync.Mutex
 	next int32 // next reference number to use for Go object, always negative
 	refs map[interface{}]int32
-	objs map[int32]countedObj
+	objs map[int32]*countedObj
 }
 
 func init() {
 	refs.Lock()
 	refs.next = -24 // Go objects get negative reference numbers. Arbitrary starting point.
 	refs.refs = make(map[interface{}]int32)
-	refs.objs = make(map[int32]countedObj)
+	refs.objs = make(map[int32]*countedObj)
 	refs.Unlock()
 }
 
@@ -66,7 +66,7 @@ func ToRefNum(obj interface{}) int32 {
 	num := refs.refs[obj]
 	if num != 0 {
 		s := refs.objs[num]
-		refs.objs[num] = countedObj{s.obj, s.cnt + 1}
+		refs.objs[num] = &countedObj{s.obj, s.cnt + 1}
 	} else {
 		num = refs.next
 		refs.next--
@@ -74,7 +74,7 @@ func ToRefNum(obj interface{}) int32 {
 			panic("refs.next underflow")
 		}
 		refs.refs[obj] = num
-		refs.objs[num] = countedObj{obj, 1}
+		refs.objs[num] = &countedObj{obj, 1}
 	}
 	refs.Unlock()
 
@@ -119,7 +119,8 @@ func (r *Ref) Get() interface{} {
 	}
 	// This is a Go reference and its refnum was incremented
 	// before crossing the language barrier.
-	Delete(refnum)
+	//println("Get() utan Delete()")
+	//Delete(refnum)
 	return o.obj
 }
 
@@ -131,7 +132,7 @@ func Inc(num int32) {
 	if !ok {
 		panic(fmt.Sprintf("seq.Inc: unknown refnum: %d", num))
 	}
-	refs.objs[num] = countedObj{o.obj, o.cnt + 1}
+	o.cnt++
 	refs.Unlock()
 }
 
@@ -148,6 +149,7 @@ func Delete(num int32) {
 		delete(refs.objs, num)
 		delete(refs.refs, o.obj)
 	} else {
-		refs.objs[num] = countedObj{o.obj, o.cnt - 1}
+		//println("decrement ref count for", num)
+		refs.objs[num] = &countedObj{o.obj, o.cnt - 1}
 	}
 }

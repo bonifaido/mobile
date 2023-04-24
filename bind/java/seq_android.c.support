@@ -229,11 +229,11 @@ nbyteslice go_seq_from_java_bytearray(JNIEnv *env, jbyteArray arr, int copy) {
 	return res;
 }
 
-int32_t go_seq_to_refnum_go(JNIEnv *env, jobject o) {
+int32_t go_seq_to_refnum_go(JNIEnv *env, jobject o, jboolean incGoRef) {
 	if (o == NULL) {
 		return NULL_REFNUM;
 	}
-	return (int32_t)(*env)->CallStaticIntMethod(env, seq_class, seq_incGoObjectRef, o);
+	return (int32_t)(*env)->CallStaticIntMethod(env, seq_class, seq_incGoObjectRef, o, incGoRef);
 }
 
 int32_t go_seq_to_refnum(JNIEnv *env, jobject o) {
@@ -246,7 +246,7 @@ int32_t go_seq_to_refnum(JNIEnv *env, jobject o) {
 int32_t go_seq_unwrap(jint refnum) {
 	JNIEnv *env = go_seq_push_local_frame(0);
 	jobject jobj = go_seq_from_refnum(env, refnum, NULL, NULL);
-	int32_t goref = go_seq_to_refnum_go(env, jobj);
+	int32_t goref = go_seq_to_refnum_go(env, jobj, JNI_TRUE);
 	go_seq_pop_local_frame(env);
 	return goref;
 }
@@ -334,7 +334,7 @@ Java_go_Seq_init(JNIEnv *env, jclass clazz) {
 	if (seq_incRef == NULL) {
 		LOG_FATAL("failed to find method Seq.incRef");
 	}
-	seq_incGoObjectRef = (*env)->GetStaticMethodID(env, seq_class, "incGoObjectRef", "(Lgo/Seq$GoObject;)I");
+	seq_incGoObjectRef = (*env)->GetStaticMethodID(env, seq_class, "incGoObjectRef", "(Lgo/Seq$GoObject;Z)I");
 	if (seq_incGoObjectRef == NULL) {
 		LOG_FATAL("failed to find method Seq.incGoObjectRef");
 	}

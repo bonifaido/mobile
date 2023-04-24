@@ -282,6 +282,12 @@ func getModuleVersions(targetPlatform string, targetArch string, src string) (*m
 			break
 		}
 	}
+
+	err = f.AddReplace("golang.org/x/mobile", "", "/Users/nandork/Code/src/github.com/bonifaido/mobile", "")
+	if err != nil {
+		return nil, err
+	}
+
 	return f, nil
 }
 

@@ -81,8 +81,8 @@ public class Seq {
 		return tracker.inc(o);
 	}
 
-	public static int incGoObjectRef(GoObject o) {
-		return o.incRefnum();
+	public static int incGoObjectRef(GoObject o, boolean incGoRef) {
+		return o.incRefnum(incGoRef);
 	}
 
 	// trackGoRef tracks a Go reference and decrements its refcount
@@ -129,7 +129,7 @@ public class Seq {
 		// The Go reference count need to be bumped while the
 		// refnum is passed to Go, to avoid finalizing and
 		// invalidating it before being translated on the Go side.
-		int incRefnum();
+		int incRefnum(boolean incGoRef);
 	}
 	// A Proxy is a Java object that proxies a Go object. Proxies, unlike
 	// GoObjects, are unwrapped to their Go counterpart when deserialized
@@ -191,7 +191,7 @@ public class Seq {
 				return NULL_REFNUM;
 			}
 			if (o instanceof Proxy) {
-				return ((Proxy)o).incRefnum();
+				return ((Proxy)o).incRefnum(true);
 			}
 			Integer refnumObj = javaRefs.get(o);
 			if (refnumObj == null) {

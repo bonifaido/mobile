@@ -230,8 +230,8 @@ func (g *JavaGen) GenClass(idx int) error {
 
 func (g *JavaGen) genProxyImpl(name string) {
 	g.Printf("private final int refnum;\n\n")
-	g.Printf("@Override public final int incRefnum() {\n")
-	g.Printf("      Seq.incGoRef(refnum, this);\n")
+	g.Printf("@Override public final int incRefnum(boolean incGoRef) {\n")
+	g.Printf("      if (incGoRef) { Seq.incGoRef(refnum, this); }\n")
 	g.Printf("      return refnum;\n")
 	g.Printf("}\n\n")
 }
@@ -1085,7 +1085,7 @@ func (g *JavaGen) genJNIField(o *types.TypeName, f *types.Var) {
 	g.Printf("JNIEXPORT void JNICALL\n")
 	g.Printf("Java_%s_%s_set%s(JNIEnv *env, jobject this, %s v) {\n", g.jniPkgName(), n, java.JNIMangle(f.Name()), g.jniType(f.Type()))
 	g.Indent()
-	g.Printf("int32_t o = go_seq_to_refnum_go(env, this);\n")
+	g.Printf("int32_t o = go_seq_to_refnum_go(env, this, JNI_TRUE);\n")
 	g.genJavaToC("v", f.Type(), modeRetained)
 	g.Printf("proxy%s_%s_%s_Set(o, _v);\n", g.pkgPrefix, o.Name(), f.Name())
 	g.genRelease("v", f.Type(), modeRetained)
@@ -1096,7 +1096,7 @@ func (g *JavaGen) genJNIField(o *types.TypeName, f *types.Var) {
 	g.Printf("JNIEXPORT %s JNICALL\n", g.jniType(f.Type()))
 	g.Printf("Java_%s_%s_get%s(JNIEnv *env, jobject this) {\n", g.jniPkgName(), n, java.JNIMangle(f.Name()))
 	g.Indent()
-	g.Printf("int32_t o = go_seq_to_refnum_go(env, this);\n")
+	g.Printf("int32_t o = go_seq_to_refnum_go(env, this, JNI_TRUE);\n")
 	g.Printf("%s r0 = ", g.cgoType(f.Type()))
 	g.Printf("proxy%s_%s_%s_Get(o);\n", g.pkgPrefix, o.Name(), f.Name())
 	g.genCToJava("_r0", "r0", f.Type(), modeRetained)
@@ -1203,7 +1203,11 @@ func (g *JavaGen) genJNIFuncBody(o *types.Func, sName string, jm *java.Func, isj
 	sig := o.Type().(*types.Signature)
 	res := sig.Results()
 	if sName != "" {
-		g.Printf("int32_t o = go_seq_to_refnum_go(env, __this__);\n")
+		if o.Name() == "Select" || (sName == "Connection" && (o.Name() == "AsyncRead" || o.Name() == "AsyncWrite")) {
+			g.Printf("int32_t o = go_seq_to_refnum_go(env, __this__, JNI_FALSE);\n")
+		} else {
+			g.Printf("int32_t o = go_seq_to_refnum_go(env, __this__, JNI_TRUE);\n")
+		}
 	}
 	params := sig.Params()
 	first := 0
