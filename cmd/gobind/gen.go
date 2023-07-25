@@ -48,7 +48,7 @@ func genPkg(lang string, p *types.Package, astFiles []*ast.File, allPkg []*types
 		Files:   astFiles,
 	}
 	_, thisfile, _, _ := runtime.Caller(0)
-	gomobiledir := thisfile[:strings.Index(thisfile, "/mobile/")+len("/mobile/")]
+	gomobiledir := strings.TrimSuffix(thisfile, "/cmd/gobind/gen.go")
 	switch lang {
 	case "java":
 		g := &bind.JavaGen{
